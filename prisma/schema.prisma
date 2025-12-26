@@ -39,7 +39,7 @@ model Session {
 
 model Account {
   id           String    @id @default(cuid())
-  accountId    String?
+  accountId    String
   userId       String
   provider     String    @default("credentials")
   providerId   String
