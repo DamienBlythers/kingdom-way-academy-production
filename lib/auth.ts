@@ -60,13 +60,13 @@ export const auth = betterAuth({
   databaseHooks: {
     account: {
       create: {
-        before: async (account) => {
-          // Fix providerId to use email for credential accounts
-          if (account.provider === "credential" && account.providerId === "credential") {
+        before: async (account: any) => {
+          // Fix providerId to use accountId (email) for credential accounts
+          if (account.providerId === "credential") {
             return {
               data: {
                 ...account,
-                providerId: account.accountId, // Use accountId (which is the email)
+                providerId: account.accountId,
               },
             };
           }
