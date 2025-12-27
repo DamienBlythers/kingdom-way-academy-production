@@ -54,7 +54,25 @@ export const auth = betterAuth({
   },
   advanced: {
     database: {
-      generateId: "uuid", // ✅ FIXED: Changed from advanced.generateId
+      generateId: "uuid",
+    },
+  },
+  databaseHooks: {
+    account: {
+      create: {
+        before: async (account) => {
+          // Fix providerId to use email for credential accounts
+          if (account.provider === "credential" && account.providerId === "credential") {
+            return {
+              data: {
+                ...account,
+                providerId: account.accountId, // Use accountId (which is the email)
+              },
+            };
+          }
+          return { data: account };
+        },
+      },
     },
   },
 });
