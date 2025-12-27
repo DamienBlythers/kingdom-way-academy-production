@@ -41,7 +41,7 @@ model Account {
   id           String    @id @default(cuid())
   accountId    String
   userId       String
-  provider     String    @default("credentials")
+  provider     String
   providerId   String
   accessToken  String?
   refreshToken String?
@@ -53,7 +53,9 @@ model Account {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, providerId])
+  @@unique([userId, accountId])
+  @@index([userId])
+  @@index([provider, providerId])
 }
 
 model Verification {
