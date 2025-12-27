@@ -10,6 +10,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
+    minPasswordLength: 6,
+    maxPasswordLength: 128,
     sendResetPassword: async ({ user, url }) => {
       try {
         await resend.emails.send({
@@ -26,9 +28,7 @@ export const auth = betterAuth({
                   Reset Password
                 </a>
               </div>
-              <p style="color: #666; font-size: 14px;">
-                Or copy this link: ${url}
-              </p>
+              <p style="color: #666; font-size: 14px;">Or copy this link: ${url}</p>
               <p style="color: #999; font-size: 12px;">
                 If you didn't request this, ignore this email. Link expires in 1 hour.
               </p>
@@ -51,5 +51,10 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
+  },
+  advanced: {
+    database: {
+      generateId: "uuid", // ✅ FIXED: Changed from advanced.generateId
+    },
   },
 });
