@@ -66,7 +66,7 @@ export default function Home() {
                 Browse Courses
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/sign-in">
               <Button size="lg" variant="outline" className="w-full sm:w-auto">
                 Get Started
               </Button>
