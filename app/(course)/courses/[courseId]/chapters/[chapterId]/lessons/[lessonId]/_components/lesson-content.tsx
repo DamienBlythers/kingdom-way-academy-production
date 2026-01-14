@@ -6,7 +6,6 @@ import { Lesson, Chapter } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
-import MuxPlayer from "@mux/mux-player-react";
 
 type LessonWithChapter = Lesson & {
   chapter: Chapter;
@@ -18,6 +17,13 @@ interface LessonContentProps {
   chapterId: string;
   isCompleted: boolean;
   isLocked: boolean;
+}
+
+// Extract YouTube video ID from URL
+function getYouTubeVideoId(url: string): string | null {
+  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[7].length === 11) ? match[7] : null;
 }
 
 export function LessonContent({
@@ -49,6 +55,8 @@ export function LessonContent({
     }
   }
 
+  const videoId = lesson.videoUrl ? getYouTubeVideoId(lesson.videoUrl) : null;
+
   return (
     <div className="flex flex-col h-full">
       {/* Video/Content Area */}
@@ -61,7 +69,7 @@ export function LessonContent({
               Please enroll in the course to access this lesson
             </p>
           </div>
-        ) : !lesson.muxPlaybackId ? (
+        ) : !videoId ? (
           <div className="absolute inset-0 flex items-center justify-center text-white">
             <div className="text-center">
               <p className="text-lg">No video available for this lesson</p>
@@ -71,11 +79,12 @@ export function LessonContent({
             </div>
           </div>
         ) : (
-          <MuxPlayer
-            playbackId={lesson.muxPlaybackId}
+          <iframe
             className="w-full h-full"
-            streamType="on-demand"
-            accentColor="#3b82f6"
+            src={`https://www.youtube.com/embed/${videoId}?rel=0`}
+            title={lesson.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
           />
         )}
       </div>
