@@ -15,7 +15,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/login">
+            <Link href="/sign-in">
               <Button variant="outline">Sign In</Button>
             </Link>
           </div>
