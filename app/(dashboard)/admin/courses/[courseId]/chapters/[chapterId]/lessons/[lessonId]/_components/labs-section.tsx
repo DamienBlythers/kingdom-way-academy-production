@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Plus, FlaskConical } from "lucide-react";
+import { Plus, FlaskConical, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -100,7 +100,12 @@ export function LabsSection({
           Kingdom Labs
         </span>
         {!isCreating && (
-          <Button onClick={() => setIsCreating(true)} variant="ghost" size="sm">
+          <Button 
+            onClick={() => setIsCreating(true)} 
+            variant="ghost" 
+            size="sm"
+            className="hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Lab
           </Button>
@@ -154,7 +159,9 @@ export function LabsSection({
                       setNewLab({ ...newLab, requiresText: !!checked })
                     }
                   />
-                  <span className="text-sm">Text Reflection (Required)</span>
+                  <span className="text-sm cursor-pointer" onClick={() => setNewLab({ ...newLab, requiresText: !newLab.requiresText })}>
+                    Text Reflection (Required)
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -163,7 +170,9 @@ export function LabsSection({
                       setNewLab({ ...newLab, requiresPhoto: !!checked })
                     }
                   />
-                  <span className="text-sm">Photo Evidence</span>
+                  <span className="text-sm cursor-pointer" onClick={() => setNewLab({ ...newLab, requiresPhoto: !newLab.requiresPhoto })}>
+                    Photo Evidence
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -172,7 +181,9 @@ export function LabsSection({
                       setNewLab({ ...newLab, requiresVideo: !!checked })
                     }
                   />
-                  <span className="text-sm">Video Testimony</span>
+                  <span className="text-sm cursor-pointer" onClick={() => setNewLab({ ...newLab, requiresVideo: !newLab.requiresVideo })}>
+                    Video Testimony
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -181,7 +192,9 @@ export function LabsSection({
                       setNewLab({ ...newLab, requiresFileUpload: !!checked })
                     }
                   />
-                  <span className="text-sm">Document Upload</span>
+                  <span className="text-sm cursor-pointer" onClick={() => setNewLab({ ...newLab, requiresFileUpload: !newLab.requiresFileUpload })}>
+                    Document Upload
+                  </span>
                 </div>
               </div>
             </div>
@@ -196,7 +209,9 @@ export function LabsSection({
                       setNewLab({ ...newLab, isGraded: !!checked })
                     }
                   />
-                  <span className="text-sm">Graded Assignment</span>
+                  <span className="text-sm cursor-pointer" onClick={() => setNewLab({ ...newLab, isGraded: !newLab.isGraded })}>
+                    Graded Assignment
+                  </span>
                 </div>
                 {newLab.isGraded && (
                   <div className="pl-6">
@@ -217,10 +232,18 @@ export function LabsSection({
           </div>
 
           <div className="flex items-center gap-x-2 pt-4">
-            <Button onClick={handleCreate} disabled={!newLab.title}>
+            <Button 
+              onClick={handleCreate} 
+              disabled={!newLab.title}
+              className="bg-blue-600 hover:bg-blue-700 transition-colors"
+            >
               Create Kingdom Lab
             </Button>
-            <Button onClick={() => setIsCreating(false)} variant="outline">
+            <Button 
+              onClick={() => setIsCreating(false)} 
+              variant="outline"
+              className="hover:bg-slate-100 transition-colors"
+            >
               Cancel
             </Button>
           </div>
@@ -235,14 +258,14 @@ export function LabsSection({
 
       {!isCreating && labs.length > 0 && (
         <div className="space-y-2">
-          {labs.map((lab, index) => (
+          {labs.map((lab) => (
             <div
               key={lab.id}
-              className="flex items-center gap-x-3 bg-white border border-slate-200 rounded-md p-3 hover:bg-slate-50 transition"
+              className="flex items-center gap-x-3 bg-white border border-slate-200 rounded-md p-3 hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
             >
-              <FlaskConical className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <FlaskConical className="h-4 w-4 text-blue-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
               <div className="flex-1">
-                <div className="font-semibold text-sm">{lab.title}</div>
+                <div className="font-semibold text-sm group-hover:text-blue-700 transition-colors">{lab.title}</div>
                 {lab.description && (
                   <div className="text-xs text-slate-500 line-clamp-1">
                     {lab.description}
@@ -250,9 +273,21 @@ export function LabsSection({
                 )}
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-500">
-                {lab.requiresText && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">Text</span>}
-                {lab.requiresPhoto && <span className="bg-green-100 text-green-700 px-2 py-1 rounded">Photo</span>}
-                {lab.requiresVideo && <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded">Video</span>}
+                {lab.requiresText && (
+                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">
+                    Text
+                  </span>
+                )}
+                {lab.requiresPhoto && (
+                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
+                    Photo
+                  </span>
+                )}
+                {lab.requiresVideo && (
+                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded font-medium">
+                    Video
+                  </span>
+                )}
                 {lab.isGraded && (
                   <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">
                     {lab.maxPoints}pts
