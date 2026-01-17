@@ -1,15 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { resend } from "@/lib/resend";
-import { enrollmentEmailTemplate } from "@/lib/email-templates";
-import { clerkClient } from "@clerk/nextjs/server";
-import Stripe from "stripe";
+import { env } from "@/lib/env";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const body = await req.text();
-  const signature = (await headers()).get("Stripe-Signature") as string;
+  const signature = headers().get("stripe-signature");
+
+  if (!signature) {
+    return NextResponse.json(
+      { error: "No signature" },
+      { status: 400 }
+    );
+  }
 
   let event: Stripe.Event;
 
@@ -17,64 +22,84 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      env.STRIPE_WEBHOOK_SECRET
     );
-  } catch (error: any) {
-    console.error("Webhook signature verification failed:", error.message);
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err);
     return NextResponse.json(
       { error: "Invalid signature" },
       { status: 400 }
     );
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.metadata?.userId;
-    const courseId = session.metadata?.courseId;
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.userId;
+        
+        if (!userId) {
+          throw new Error("No userId in metadata");
+        }
 
-    if (!userId || !courseId) {
-      return NextResponse.json(
-        { error: "Missing metadata" },
-        { status: 400 }
-      );
-    }
-
-    // Create enrollment
-    await prisma.enrollment.create({
-      data: {
-        userId,
-        courseId,
-      },
-    });
-
-    console.log(`✅ Enrollment created: User ${userId} → Course ${courseId}`);
-
-    // Get user from Clerk and course from database
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-    const course = await prisma.course.findUnique({ where: { id: courseId } });
-
-    if (user && course) {
-      try {
-        const emailContent = enrollmentEmailTemplate({
-          userName: user.firstName || user.emailAddresses[0]?.emailAddress || "Student",
-          courseName: course.title,
-          courseUrl: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${courseId}`,
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            stripeCustomerId: session.customer as string,
+            stripeSubscriptionId: session.subscription as string,
+            stripePriceId: session.line_items?.data[0]?.price?.id,
+            subscriptionStatus: "ACTIVE",
+          },
         });
+        break;
+      }
 
-        await resend.emails.send({
-          from: "Kingdom Way Academy <onboarding@resend.dev>",
-          to: user.emailAddresses[0]?.emailAddress || "",
-          subject: emailContent.subject,
-          html: emailContent.html,
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        await prisma.user.update({
+          where: { stripeCustomerId: subscription.customer as string },
+          data: {
+            subscriptionStatus: subscription.status.toUpperCase() as any,
+            subscriptionEndDate: new Date(subscription.current_period_end * 1000),
+          },
         });
+        break;
+      }
 
-        console.log(`📧 Enrollment email sent to ${user.emailAddresses[0]?.emailAddress}`);
-      } catch (emailError) {
-        console.error("Failed to send enrollment email:", emailError);
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        await prisma.user.update({
+          where: { stripeCustomerId: subscription.customer as string },
+          data: {
+            subscriptionStatus: "CANCELED",
+            stripeSubscriptionId: null,
+            stripePriceId: null,
+          },
+        });
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        
+        await prisma.user.update({
+          where: { stripeCustomerId: invoice.customer as string },
+          data: {
+            subscriptionStatus: "PAST_DUE",
+          },
+        });
+        break;
       }
     }
-  }
 
-  return NextResponse.json({ received: true });
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("Webhook handler error:", error);
+    return NextResponse.json(
+      { error: "Webhook handler failed" },
+      { status: 500 }
+    );
+  }
 }

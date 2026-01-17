@@ -1,24 +1,34 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
-// Define which routes require authentication
-const isProtectedRoute = createRouteMatcher([
-  '/admin(.*)',           // Protect admin panel
-  '/dashboard(.*)',       // Protect student dashboard
-  '/courses/:id/lesson(.*)'  // ✅ Valid - :id matches any course ID
-]);
+export default withAuth(
+  function middleware(req) {
+    const token = req.nextauth.token;
+    const path = req.nextUrl.pathname;
 
-export default clerkMiddleware(async (auth, req) => {
-  // Protect routes that require authentication
-  if (isProtectedRoute(req)) {
-    await auth.protect();
+    // Admin routes
+    if (path.startsWith("/admin") && token?.role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    // Instructor routes
+    if (
+      path.startsWith("/instructor") &&
+      token?.role !== "INSTRUCTOR" &&
+      token?.role !== "ADMIN"
+    ) {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token,
+    },
   }
-});
+);
 
 export const config = {
-  matcher: [
-    // Skip Next.js internals and static files
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
-  ],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/instructor/:path*"],
 };
